@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import glob
+from pathlib import Path
 import plotly.express as px
 
 st.set_page_config(page_title="Invisible Population Detector (IPD)", layout="wide")
+
+BASE_DIR = Path(__file__).parent
 
 st.title("🛰️ Invisible Population Detector (IPD) — UIDAI 2025")
 st.caption("Built using UIDAI Enrolment + Demographic + Biometric datasets (Mar–Dec 2025)")
@@ -17,10 +19,9 @@ def safe_div(a, b):
 
 @st.cache_data(show_spinner=False)
 def load_uidai_enrolment():
-    files = sorted(glob.glob("api_data_aadhar_enrolment_*.csv"))
+    files = sorted(BASE_DIR.glob("api_data_aadhar_enrolment_*.csv"))
     if not files:
-        st.error("❌ Enrolment files not found: api_data_aadhar_enrolment_*.csv")
-        st.stop()
+        raise FileNotFoundError(f"Enrolment CSVs not found in: {BASE_DIR}")
 
     df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
 
@@ -39,10 +40,9 @@ def load_uidai_enrolment():
 
 @st.cache_data(show_spinner=False)
 def load_uidai_demo():
-    files = sorted(glob.glob("api_data_aadhar_demographic_*.csv"))
+    files = sorted(BASE_DIR.glob("api_data_aadhar_demographic_*.csv"))
     if not files:
-        st.error("❌ Demographic files not found: api_data_aadhar_demographic_*.csv")
-        st.stop()
+        raise FileNotFoundError(f"Demographic CSVs not found in: {BASE_DIR}")
 
     df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
 
@@ -62,10 +62,9 @@ def load_uidai_demo():
 
 @st.cache_data(show_spinner=False)
 def load_uidai_bio():
-    files = sorted(glob.glob("api_data_aadhar_biometric_*.csv"))
+    files = sorted(BASE_DIR.glob("api_data_aadhar_biometric_*.csv"))
     if not files:
-        st.error("❌ Biometric files not found: api_data_aadhar_biometric_*.csv")
-        st.stop()
+        raise FileNotFoundError(f"Biometric CSVs not found in: {BASE_DIR}")
 
     df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
 
