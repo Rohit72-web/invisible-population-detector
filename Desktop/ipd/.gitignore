@@ -1,6 +1,3 @@
-# Data files (CSV - too large for GitHub)
-*.csv
-
 # Python
 __pycache__/
 *.py[cod]
