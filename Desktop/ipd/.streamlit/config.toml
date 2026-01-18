@@ -15,3 +15,11 @@ level = "info"
 [server]
 maxUploadSize = 200
 enableXsrfProtection = true
+timeoutSeconds = 300
+heartbeatRate = 30
+
+[memory]
+maxCachedMessageMB = 200
+
+[browser]
+gatherUsageStats = false

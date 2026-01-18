@@ -4,6 +4,8 @@ import numpy as np
 from pathlib import Path
 import glob
 import plotly.express as px
+import warnings
+warnings.filterwarnings('ignore')
 
 st.set_page_config(page_title="Invisible Population Detector (IPD)", layout="wide")
 
@@ -18,81 +20,98 @@ st.caption("Built using UIDAI Enrolment + Demographic + Biometric datasets (Mar�
 def safe_div(a, b):
     return np.where(b == 0, np.nan, a / b)
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def load_uidai_enrolment():
-    files = sorted(list(BASE_DIR.glob("api_data_aadhar_enrolment_*.csv")))
-    if not files:
-        st.error(f"❌ Enrolment files not found in: {BASE_DIR}")
+    try:
+        files = sorted(list(BASE_DIR.glob("api_data_aadhar_enrolment_*.csv")))
+        if not files:
+            st.error(f"❌ Enrolment files not found in: {BASE_DIR}")
+            st.stop()
+
+        df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
+
+        df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
+
+        for c in ["age_0_5", "age_5_17", "age_18_greater"]:
+            df[c] = pd.to_numeric(df.get(c, 0), errors="coerce").fillna(0).astype(int)
+
+        df["total_enrolments"] = df[["age_0_5", "age_5_17", "age_18_greater"]].sum(axis=1)
+
+        df["month"] = df["date"].dt.to_period("M").astype(str)
+        df["state"] = df["state"].fillna("Unknown").astype(str)
+        df["district"] = df["district"].fillna("Unknown").astype(str)
+
+        return df
+    except Exception as e:
+        st.error(f"❌ Error loading enrolment data: {str(e)}")
         st.stop()
 
-    df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
-
-    for c in ["age_0_5", "age_5_17", "age_18_greater"]:
-        df[c] = pd.to_numeric(df.get(c, 0), errors="coerce").fillna(0).astype(int)
-
-    df["total_enrolments"] = df[["age_0_5", "age_5_17", "age_18_greater"]].sum(axis=1)
-
-    df["month"] = df["date"].dt.to_period("M").astype(str)
-    df["state"] = df["state"].fillna("Unknown").astype(str)
-    df["district"] = df["district"].fillna("Unknown").astype(str)
-
-    return df
-
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def load_uidai_demo():
-    files = sorted(list(BASE_DIR.glob("api_data_aadhar_demographic_*.csv")))
-    if not files:
-        st.error(f"❌ Demographic files not found in: {BASE_DIR}")
+    try:
+        files = sorted(list(BASE_DIR.glob("api_data_aadhar_demographic_*.csv")))
+        if not files:
+            st.error(f"❌ Demographic files not found in: {BASE_DIR}")
+            st.stop()
+
+        df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
+
+        df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
+        age_cols = [c for c in df.columns if "age" in c.lower()]
+
+        for c in age_cols:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+
+        df["total_demo_updates"] = df[age_cols].sum(axis=1)
+
+        df["month"] = df["date"].dt.to_period("M").astype(str)
+        df["state"] = df["state"].fillna("Unknown").astype(str)
+        df["district"] = df["district"].fillna("Unknown").astype(str)
+
+        return df
+    except Exception as e:
+        st.error(f"❌ Error loading demographic data: {str(e)}")
         st.stop()
 
-    df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
-    age_cols = [c for c in df.columns if "age" in c.lower()]
-
-    for c in age_cols:
-        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
-
-    df["total_demo_updates"] = df[age_cols].sum(axis=1)
-
-    df["month"] = df["date"].dt.to_period("M").astype(str)
-    df["state"] = df["state"].fillna("Unknown").astype(str)
-    df["district"] = df["district"].fillna("Unknown").astype(str)
-
-    return df
-
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def load_uidai_bio():
-    files = sorted(list(BASE_DIR.glob("api_data_aadhar_biometric_*.csv")))
-    if not files:
-        st.error(f"❌ Biometric files not found in: {BASE_DIR}")
+    try:
+        files = sorted(list(BASE_DIR.glob("api_data_aadhar_biometric_*.csv")))
+        if not files:
+            st.error(f"❌ Biometric files not found in: {BASE_DIR}")
+            st.stop()
+
+        df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
+
+        df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
+
+        bio_cols = [c for c in df.columns if ("bio" in c.lower()) or ("age" in c.lower())]
+
+        for c in bio_cols:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+
+        df["total_bio_updates"] = df[bio_cols].sum(axis=1)
+
+        df["month"] = df["date"].dt.to_period("M").astype(str)
+        df["state"] = df["state"].fillna("Unknown").astype(str)
+        df["district"] = df["district"].fillna("Unknown").astype(str)
+
+        return df
+    except Exception as e:
+        st.error(f"❌ Error loading biometric data: {str(e)}")
         st.stop()
-
-    df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
-
-    bio_cols = [c for c in df.columns if ("bio" in c.lower()) or ("age" in c.lower())]
-
-    for c in bio_cols:
-        df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
-
-    df["total_bio_updates"] = df[bio_cols].sum(axis=1)
-
-    df["month"] = df["date"].dt.to_period("M").astype(str)
-    df["state"] = df["state"].fillna("Unknown").astype(str)
-    df["district"] = df["district"].fillna("Unknown").astype(str)
-
-    return df
 
 # ----------------------------
 # Load datasets
 # ----------------------------
-enrol = load_uidai_enrolment()
-demo = load_uidai_demo()
-bio = load_uidai_bio()
+with st.spinner("📊 Loading enrolment data..."):
+    enrol = load_uidai_enrolment()
+with st.spinner("📊 Loading demographic data..."):
+    demo = load_uidai_demo()
+with st.spinner("📊 Loading biometric data..."):
+    bio = load_uidai_bio()
+
+st.success("✅ All datasets loaded successfully!")
 
 # ----------------------------
 # Sidebar Filters
