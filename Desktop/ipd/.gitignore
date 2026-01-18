@@ -1,3 +1,6 @@
+# Large data files
+api_data_aadhar_*.csv
+
 # Python
 __pycache__/
 *.py[cod]
@@ -12,7 +15,7 @@ dist/
 build/
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
 
 # IDE
 .vscode/
