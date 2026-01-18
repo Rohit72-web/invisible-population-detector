@@ -50,6 +50,45 @@ The app will open at `http://localhost:8501`
    - You need to upload CSV files OR commit them to GitHub
    - To commit: `git add *.csv` and `git push`
 
+## Deploying to Render (Recommended Alternative)
+
+1. **Create Account**: https://render.com (free tier available)
+
+2. **Deploy**:
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
+   - Render will auto-detect `render.yaml` configuration
+   - Environment: Python
+   - Region: Choose closest to your location
+   - Plan: Free (or Starter for more power)
+   - Click "Create Web Service"
+
+3. **Wait for Deployment**:
+   - Render will build and deploy automatically
+   - Check logs for any errors
+   - Your app will be live at: `https://your-service-name.onrender.com`
+
+4. **Enable Auto-Deploy**:
+   - Settings → Auto-Deploy
+   - Choose: Deploy new commits to production
+
+**Render vs Streamlit Cloud**:
+- ✅ Render: Better uptime, faster, more control
+- ✅ Streamlit Cloud: Simpler setup, official support
+- 🔽 Both free for small apps
+
+## Deploying to Railway (Also Recommended)
+
+1. **Create Account**: https://railway.app
+2. **Click "New Project"** → GitHub
+3. Configure same as Render
+4. Deploy!
+
+**Railway Features**:
+- Pay-as-you-go pricing
+- Free credits ($5/month)
+- Good for medium traffic apps
+
 ## Data Files
 
 Place all UIDAI CSV files in the project root directory. The app uses glob patterns to find:
