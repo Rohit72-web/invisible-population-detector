@@ -16,9 +16,7 @@ level = "info"
 maxUploadSize = 200
 enableXsrfProtection = true
 timeoutSeconds = 300
-heartbeatRate = 30
-port = 10000
-headless = true
+headbeatRate = 30
 
 [memory]
 maxCachedMessageMB = 200
