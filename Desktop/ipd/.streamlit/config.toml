@@ -10,16 +10,24 @@ showErrorDetails = true
 toolbarMode = "minimal"
 
 [logger]
-level = "info"
+level = "error"
 
 [server]
 maxUploadSize = 200
 enableXsrfProtection = true
 timeoutSeconds = 300
-headbeatRate = 30
+heartbeatRate = 30
+maxMessageSize = 200
 
 [memory]
 maxCachedMessageMB = 200
 
 [browser]
 gatherUsageStats = false
+serverAddress = "localhost"
+
+[client]
+toolbarMode = "minimal"
+
+[logger]
+level = "error"

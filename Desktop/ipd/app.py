@@ -6,7 +6,11 @@ import glob
 import plotly.express as px
 import warnings
 import os
+import gc
 warnings.filterwarnings('ignore')
+
+# Memory management
+gc.collect()
 
 st.set_page_config(page_title="Invisible Population Detector (IPD)", layout="wide", initial_sidebar_state="collapsed")
 
@@ -20,7 +24,7 @@ st.caption("Built using UIDAI Enrolment + Demographic + Biometric datasets (Mar�
 
 # Show warning if on cloud
 if IS_CLOUD:
-    st.warning("⚠️ Running on Streamlit Cloud with limited memory. Loading data may take 1-2 minutes on first run.")
+    st.warning("⚠️ Running on Streamlit Cloud. Multiple users may cause slowness. Please refresh if page hangs.")
 
 # ----------------------------
 # Helper functions
@@ -134,16 +138,50 @@ def load_uidai_bio():
         st.stop()
 
 # ----------------------------
-# Load datasets
+# Load datasets (LAZY LOADING - only when needed)
 # ----------------------------
-with st.spinner("📊 Loading enrolment data..."):
-    enrol = load_uidai_enrolment()
-with st.spinner("📊 Loading demographic data..."):
-    demo = load_uidai_demo()
-with st.spinner("📊 Loading biometric data..."):
-    bio = load_uidai_bio()
 
-st.success("✅ All datasets loaded successfully!")
+@st.cache_resource
+def init_session():
+    """Initialize session state for lazy loading"""
+    return {
+        'enrol_loaded': False,
+        'demo_loaded': False,
+        'bio_loaded': False
+    }
+
+session = init_session()
+
+# Lazy load with error handling
+try:
+    if not session.get('enrol_loaded'):
+        with st.spinner("📊 Loading enrolment data..."):
+            enrol = load_uidai_enrolment()
+            session['enrol_loaded'] = True
+    else:
+        enrol = load_uidai_enrolment()
+        
+    if not session.get('demo_loaded'):
+        with st.spinner("📊 Loading demographic data..."):
+            demo = load_uidai_demo()
+            session['demo_loaded'] = True
+    else:
+        demo = load_uidai_demo()
+        
+    if not session.get('bio_loaded'):
+        with st.spinner("📊 Loading biometric data..."):
+            bio = load_uidai_bio()
+            session['bio_loaded'] = True
+    else:
+        bio = load_uidai_bio()
+    
+    gc.collect()  # Free up memory after loading
+    st.success("✅ All datasets loaded successfully!")
+    
+except Exception as e:
+    st.error(f"❌ Error loading datasets: {str(e)}")
+    st.info("💡 Try refreshing the page or wait a few minutes before retrying.")
+    st.stop()
 
 # ----------------------------
 # Sidebar Filters
@@ -167,6 +205,10 @@ def apply_filters(df):
 enrol_f = apply_filters(enrol)
 demo_f = apply_filters(demo)
 bio_f = apply_filters(bio)
+
+# Clean up memory
+del enrol, demo, bio
+gc.collect()
 
 # ----------------------------
 # KPI Cards (Proof scale)
