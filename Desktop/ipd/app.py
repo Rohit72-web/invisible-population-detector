@@ -5,14 +5,22 @@ from pathlib import Path
 import glob
 import plotly.express as px
 import warnings
+import os
 warnings.filterwarnings('ignore')
 
-st.set_page_config(page_title="Invisible Population Detector (IPD)", layout="wide")
+st.set_page_config(page_title="Invisible Population Detector (IPD)", layout="wide", initial_sidebar_state="collapsed")
+
+# Check if running on Streamlit Cloud (memory constraint)
+IS_CLOUD = os.getenv('STREAMLIT_CLOUD', False)
 
 BASE_DIR = Path(__file__).parent
 
 st.title("🛰️ Invisible Population Detector (IPD) — UIDAI 2025")
 st.caption("Built using UIDAI Enrolment + Demographic + Biometric datasets (Mar–Dec 2025)")
+
+# Show warning if on cloud
+if IS_CLOUD:
+    st.warning("⚠️ Running on Streamlit Cloud with limited memory. Loading data may take 1-2 minutes on first run.")
 
 # ----------------------------
 # Helper functions
@@ -28,20 +36,35 @@ def load_uidai_enrolment():
             st.error(f"❌ Enrolment files not found in: {BASE_DIR}")
             st.stop()
 
-        df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
+        # Load with optimized dtypes for cloud memory
+        df = pd.concat([
+            pd.read_csv(f, low_memory=False, dtype={
+                'state': 'category',
+                'district': 'category',
+                'age_0_5': 'int32',
+                'age_5_17': 'int32',
+                'age_18_greater': 'int32'
+            })
+            for f in files
+        ], ignore_index=True)
 
         df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
 
         for c in ["age_0_5", "age_5_17", "age_18_greater"]:
-            df[c] = pd.to_numeric(df.get(c, 0), errors="coerce").fillna(0).astype(int)
+            if c in df.columns:
+                df[c] = pd.to_numeric(df.get(c, 0), errors="coerce").fillna(0).astype(int)
+            else:
+                df[c] = 0
 
         df["total_enrolments"] = df[["age_0_5", "age_5_17", "age_18_greater"]].sum(axis=1)
-
         df["month"] = df["date"].dt.to_period("M").astype(str)
-        df["state"] = df["state"].fillna("Unknown").astype(str)
-        df["district"] = df["district"].fillna("Unknown").astype(str)
+        df["state"] = df["state"].astype(str)
+        df["district"] = df["district"].astype(str)
 
         return df
+    except MemoryError:
+        st.error("❌ Memory limit exceeded. Try on a desktop or reduce dataset size.")
+        st.stop()
     except Exception as e:
         st.error(f"❌ Error loading enrolment data: {str(e)}")
         st.stop()
@@ -54,21 +77,26 @@ def load_uidai_demo():
             st.error(f"❌ Demographic files not found in: {BASE_DIR}")
             st.stop()
 
-        df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
+        df = pd.concat([
+            pd.read_csv(f, low_memory=False, dtype={'state': 'category', 'district': 'category'})
+            for f in files
+        ], ignore_index=True)
 
         df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
         age_cols = [c for c in df.columns if "age" in c.lower()]
 
         for c in age_cols:
-            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype('int32')
 
         df["total_demo_updates"] = df[age_cols].sum(axis=1)
-
         df["month"] = df["date"].dt.to_period("M").astype(str)
-        df["state"] = df["state"].fillna("Unknown").astype(str)
-        df["district"] = df["district"].fillna("Unknown").astype(str)
+        df["state"] = df["state"].astype(str)
+        df["district"] = df["district"].astype(str)
 
         return df
+    except MemoryError:
+        st.error("❌ Memory limit exceeded. Try on a desktop or reduce dataset size.")
+        st.stop()
     except Exception as e:
         st.error(f"❌ Error loading demographic data: {str(e)}")
         st.stop()
@@ -81,22 +109,26 @@ def load_uidai_bio():
             st.error(f"❌ Biometric files not found in: {BASE_DIR}")
             st.stop()
 
-        df = pd.concat([pd.read_csv(f, low_memory=False) for f in files], ignore_index=True)
+        df = pd.concat([
+            pd.read_csv(f, low_memory=False, dtype={'state': 'category', 'district': 'category'})
+            for f in files
+        ], ignore_index=True)
 
         df["date"] = pd.to_datetime(df["date"], errors="coerce", dayfirst=True)
-
         bio_cols = [c for c in df.columns if ("bio" in c.lower()) or ("age" in c.lower())]
 
         for c in bio_cols:
-            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype('int32')
 
         df["total_bio_updates"] = df[bio_cols].sum(axis=1)
-
         df["month"] = df["date"].dt.to_period("M").astype(str)
-        df["state"] = df["state"].fillna("Unknown").astype(str)
-        df["district"] = df["district"].fillna("Unknown").astype(str)
+        df["state"] = df["state"].astype(str)
+        df["district"] = df["district"].astype(str)
 
         return df
+    except MemoryError:
+        st.error("❌ Memory limit exceeded. Try on a desktop or reduce dataset size.")
+        st.stop()
     except Exception as e:
         st.error(f"❌ Error loading biometric data: {str(e)}")
         st.stop()
