@@ -206,10 +206,6 @@ enrol_f = apply_filters(enrol)
 demo_f = apply_filters(demo)
 bio_f = apply_filters(bio)
 
-# Clean up memory
-del enrol, demo, bio
-gc.collect()
-
 # ----------------------------
 # KPI Cards (Proof scale)
 # ----------------------------
@@ -217,7 +213,7 @@ total_enrol = int(enrol_f["total_enrolments"].sum())
 total_demo = int(demo_f["total_demo_updates"].sum())
 total_bio = int(bio_f["total_bio_updates"].sum())
 
-# Peak spike day (global)
+# Peak spike day (global) - use enrol BEFORE deleting
 daily = enrol.groupby("date").agg(total=("total_enrolments", "sum")).reset_index()
 daily = daily.dropna().sort_values("total", ascending=False)
 
@@ -227,6 +223,10 @@ if len(daily) > 0:
 else:
     spike_date = "N/A"
     spike_val = 0
+
+# Clean up memory after using all data
+del daily
+gc.collect()
 
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Total Enrolments", f"{total_enrol:,}")
