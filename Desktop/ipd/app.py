@@ -19,7 +19,7 @@ IS_CLOUD = os.getenv('STREAMLIT_CLOUD', False)
 
 BASE_DIR = Path(__file__).parent
 
-st.title("🛰️ Invisible Population Detector (IPD) — UIDAI 2025")
+st.title("🛰️ Invisible Population Detector (IPD) — UIDAI 2026")
 st.caption("Built using UIDAI Enrolment + Demographic + Biometric datasets (Mar–Dec 2025)")
 
 # Show warning if on cloud
